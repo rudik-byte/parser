@@ -3,7 +3,6 @@ package com.example.testparse.service.impl;
 import com.example.testparse.model.Product;
 import com.example.testparse.service.Parser;
 import com.google.gson.Gson;
-import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -12,9 +11,8 @@ import org.jsoup.select.Elements;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 public class ParserImpl implements Parser {
@@ -22,14 +20,14 @@ public class ParserImpl implements Parser {
     private static final String attribute = "data-test-id";
 
     public List<Product> parse(String url) {
-        List<Product> products = new ArrayList<>();
+        List<Product> products = new CopyOnWriteArrayList<>();
         int counterRequest = 0;
         int counterItems = 0;
 
         try {
             Document doc = Jsoup.connect(url).get();
             ++counterRequest;
-            Elements elements = doc.getElementsByAttributeValue(attribute, "ProductTile");
+            Elements elements = doc.getElementsByAttributeValue(attribute, "ProductTile").nextAll();
             counterItems = elements.size();
             for (Element element : elements) {
                 String linkHref = element.attr("href");
@@ -40,6 +38,7 @@ public class ParserImpl implements Parser {
                 ++counterRequest;
                 products.add(parseItem(item));
             }
+
         } catch (IOException ex) {
             System.out.println("Problems with connection");
         } catch (InterruptedException ex) {
@@ -69,7 +68,7 @@ public class ParserImpl implements Parser {
                 .text().replaceFirst("Art.-Nr. ", "");
         Elements sizeInfo = item.getElementsByAttributeValue(attribute, "SizeInfo");
 
-        List<String> sizes =sizeInfo.stream()
+        List<String> sizes = sizeInfo.stream()
                 .map(Element::text)
                 .collect(Collectors.toList());
 
